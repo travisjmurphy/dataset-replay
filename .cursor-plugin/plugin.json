@@ -1,0 +1,18 @@
+{
+  "author": {
+    "name": "Travis Murphy"
+  },
+  "description": "Find the source lines behind failed CSV checks. Compare two saved exports by key, even when rows have moved.",
+  "keywords": [
+    "csv",
+    "data-quality",
+    "export",
+    "drift",
+    "mcp"
+  ],
+  "license": "MIT",
+  "logo": "assets/logo.svg",
+  "name": "dataset-replay",
+  "repository": "https://github.com/travisjmurphy/dataset-replay",
+  "version": "0.1.1"
+}

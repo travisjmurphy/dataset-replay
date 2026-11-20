@@ -1,0 +1,252 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="color-scheme" content="dark">
+<title>Dataset Replay — Export Integrity</title>
+<style>
+:root{--page:#101413;--panel:#171d1b;--edge:#2b3833;--text:#edf5ef;--muted:#b2c3b8;--mint:#a1f2ba;--danger:#ffc1b2;--danger-bg:#3d231d;--ok-bg:#173521;--yellow:#f4dfa3;--mono:ui-monospace,Consolas,monospace}*{box-sizing:border-box}body{margin:0;background:radial-gradient(ellipse at 75% 0%,#22332a 0,transparent 36%),var(--page);color:var(--text);font:16px/1.55 system-ui,sans-serif}.wrap{max-width:1060px;margin:auto;padding:2.2rem 1.25rem 3rem}.identity,.label,.eyebrow{font:700 .76rem/1.35 var(--mono);letter-spacing:.12em;text-transform:uppercase;color:var(--mint)}.identity:before{content:"";display:inline-block;width:10px;height:10px;border-radius:50%;background:var(--mint);margin-right:.6rem}h1{margin:.45rem 0 0;font-size:clamp(2.5rem,8vw,5rem);line-height:1.02;letter-spacing:-.075em}h2{margin:0 0 .6rem;line-height:1.2;font-size:1.15rem}p{margin:.5rem 0}.intro{font-size:1.2rem;max-width:630px;color:var(--muted)}.tabs{display:flex;gap:.6rem;flex-wrap:wrap;margin:1.65rem 0 1rem}button{border:1px solid var(--edge);background:#1e2923;color:var(--text);padding:.55rem .8rem;border-radius:8px;font:600 .9rem system-ui;cursor:pointer}button[aria-pressed=true]{background:var(--mint);border-color:var(--mint);color:#132216}button:hover{border-color:var(--mint)}button:focus-visible,summary:focus-visible,textarea:focus-visible{outline:2px solid var(--mint);outline-offset:3px}.report,.inputs,details{border:1px solid var(--edge);background:var(--panel);border-radius:14px;padding:1.05rem}.report{margin-bottom:1rem}.head{display:flex;justify-content:space-between;align-items:flex-start;gap:.8rem;flex-wrap:wrap}.badge{font:800 .8rem var(--mono);letter-spacing:.08em;text-transform:uppercase;padding:.3rem .65rem;border-radius:30px;background:var(--danger-bg);color:var(--danger)}.badge.pass{background:var(--ok-bg);color:var(--mint)}.badge.unknown{color:var(--yellow);background:#302b20}.muted,.hint{color:var(--muted)}.hint{font-size:.84rem}.stats{display:flex;gap:.7rem;flex-wrap:wrap;margin:.85rem 0}.stat{min-width:120px;flex:1;border:1px solid var(--edge);border-radius:10px;padding:.65rem}.stat span{display:block;color:var(--muted);font-size:.8rem}.stat strong{font:750 1.3rem var(--mono)}table{border-collapse:collapse;width:100%}.scroll{overflow:auto}th,td{text-align:left;padding:.55rem .55rem;border-bottom:1px solid var(--edge);overflow-wrap:anywhere}th{font:700 .72rem var(--mono);letter-spacing:.05em;color:var(--muted);text-transform:uppercase}td{font-size:.88rem}td:nth-child(2),td:nth-child(3),td:nth-child(4){font-family:var(--mono);font-size:.8rem;white-space:nowrap}.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,260px),1fr));gap:.65rem}.grid pre{margin:.4rem 0 0;padding:.62rem;background:#111714;border-radius:8px;font:.78rem/1.55 var(--mono);overflow:auto}details{margin-top:1rem}summary{cursor:pointer;font-weight:700}textarea{display:block;width:100%;min-height:9rem;margin:.65rem 0;padding:.7rem;background:#101613;color:var(--text);font:.83rem/1.45 var(--mono);border:1px solid var(--edge);border-radius:8px}#error{color:var(--danger)}[hidden]{display:none!important}.sr{position:absolute;left:-10000px}
+</style>
+</head>
+<body><main class="wrap">
+<div class="identity">Dataset Replay / private demo</div>
+<h1>Your code passed.<br>Did your data?</h1>
+<p class="intro">Check two saved CSV exports. See which rule failed and where to find the evidence.</p>
+<div class="tabs" aria-label="Demo scenarios"><button type="button" id="show-broken" aria-pressed="true">Broken export</button><button type="button" id="show-clean" aria-pressed="false">Reordered clean export</button></div>
+<section class="report" aria-labelledby="summary-title">
+<div class="head"><div><div id="origin" class="eyebrow">Local sample · precomputed</div><h2 id="summary-title">Retail export check</h2></div><span id="badge" class="badge" role="status" aria-live="polite">Failed</span></div>
+<p id="explanation" class="muted"></p>
+<div class="stats"><div class="stat"><span>Baseline rows</span><strong id="before">4</strong></div><div class="stat"><span>Candidate rows</span><strong id="after">4</strong></div><div class="stat"><span>Findings shown / total</span><strong id="finding-count">3 / 3</strong></div></div>
+<p id="schema-delta" class="hint"></p><p id="change-totals" class="hint"></p><div class="scroll"><table id="findings"><caption class="sr">Row-level evidence</caption><thead><tr><th scope="col">Check</th><th scope="col">Key</th><th scope="col">Column</th><th scope="col">Source line</th><th scope="col">Observed</th></tr></thead><tbody id="rows"></tbody></table></div>
+<p id="no-findings" class="muted" hidden></p><section id="change-section" hidden><h2>Keyed row changes</h2><div class="scroll"><table><thead><tr><th scope="col">Change</th><th scope="col">Key</th><th scope="col">Baseline line</th><th scope="col">Candidate line</th><th scope="col">Fields</th></tr></thead><tbody id="change-rows"></tbody></table></div><p class="hint" id="change-evidence-note"></p></section>
+</section>
+<section id="fixture-section" class="inputs" aria-labelledby="fixture-title">
+<div class="label">Inputs</div><h2 id="fixture-title">One small, synthetic price feed</h2>
+<p class="hint">Checks: SKU unique and nonempty; CAD price required and at least 0.01. At least four candidate rows and all baseline keys must remain. Row order does not matter.</p>
+<div class="grid"><div><strong>Known-good CSV</strong><pre id="fixture-before"></pre></div><div><strong>Candidate CSV</strong><pre id="fixture-after"></pre></div></div>
+</section>
+<details><summary>Preview a report from the comparison engine</summary>
+<p id="input-help" class="hint">Paste an already-computed JSON report. This preview does not compare CSVs itself or send data anywhere. The built-in examples are real precomputed results on synthetic inputs, not live runs.</p>
+<label for="report-input">Report JSON</label><textarea id="report-input" spellcheck="false" aria-describedby="input-help error" placeholder='{"version":1,"status":"pass","counts":{"baseline":4,"candidate":4},"findings":[]}'></textarea>
+<button id="load-report" type="button">Render report</button><p id="error" role="alert" hidden></p>
+</details>
+</main>
+<script>
+(function () {
+'use strict';
+const byId = id => document.getElementById(id);
+const fixtures = {
+before:"sku,name,price_cad\nA-104,Trail mug,19.95\nB-209,Desk lamp,49.00\nC-302,Camp blanket,36.50\nD-418,Pantry bin,13.25",
+broken:"sku,name,price_cad\nA-104,Trail mug,19.95\nB-209,Desk lamp,\nB-209,Desk lamp,49.00\nC-302,Camp blanket,0\nD-418,Pantry bin,13.25",
+clean:"sku,name,price_cad\nD-418,Pantry bin,13.25\nB-209,Desk lamp,49.00\nA-104,Trail mug,19.95\nC-302,Camp blanket,36.50"
+};
+const sample = {
+  "broken": {
+    "version": 1,
+    "status": "fail",
+    "verdict": "candidate-failed",
+    "sideFindings": {
+      "baseline": 0,
+      "candidate": 3
+    },
+    "retention": {
+      "baselineEligible": 4,
+      "retained": 4,
+      "minimum": 1
+    },
+    "counts": {
+      "baseline": 4,
+      "candidate": 5,
+      "added": 0,
+      "removed": 0,
+      "changed": 1,
+      "findings": 3
+    },
+    "schema": {
+      "added": [],
+      "removed": []
+    },
+    "findings": [
+      {
+        "code": "missing_required_value",
+        "side": "candidate",
+        "key": "B-209",
+        "column": "price_cad",
+        "line": 3,
+        "record": 2,
+        "value": ""
+      },
+      {
+        "code": "duplicate_key",
+        "side": "candidate",
+        "key": "B-209",
+        "column": "sku",
+        "line": 4,
+        "record": 3,
+        "value": "B-209",
+        "firstLine": 3,
+        "firstRecord": 2
+      },
+      {
+        "code": "number_out_of_range",
+        "side": "candidate",
+        "key": "C-302",
+        "column": "price_cad",
+        "line": 5,
+        "record": 4,
+        "value": "0"
+      }
+    ],
+    "changes": [
+      {
+        "kind": "changed",
+        "key": "C-302",
+        "baselineLine": 4,
+        "candidateLine": 5,
+        "baselineRecord": 3,
+        "candidateRecord": 4,
+        "fields": [
+          {
+            "column": "price_cad",
+            "before": "36.50",
+            "after": "0"
+          }
+        ]
+      }
+    ],
+    "truncated": {
+      "findings": 0,
+      "changes": 0,
+      "fields": 0
+    }
+  },
+  "clean": {
+    "version": 1,
+    "status": "pass",
+    "verdict": "pass",
+    "sideFindings": {
+      "baseline": 0,
+      "candidate": 0
+    },
+    "retention": {
+      "baselineEligible": 4,
+      "retained": 4,
+      "minimum": 1
+    },
+    "counts": {
+      "baseline": 4,
+      "candidate": 4,
+      "added": 0,
+      "removed": 0,
+      "changed": 0,
+      "findings": 0
+    },
+    "schema": {
+      "added": [],
+      "removed": []
+    },
+    "findings": [],
+    "changes": [],
+    "truncated": {
+      "findings": 0,
+      "changes": 0,
+      "fields": 0
+    }
+  }
+};
+const own=(o,k)=>Object.prototype.hasOwnProperty.call(o,k);
+const str=(v, blank=false)=>{
+  if(v===null || v===undefined) return "Not supplied";
+  if(v==="" && blank) return "(empty)";
+  if(!["string","number","boolean"].includes(typeof v)) return "[structured evidence not shown]";
+  return String(v).slice(0,240).replace(/[\x00-\x1f\x7f-\x9f\u2028\u2029\u202a-\u202e\u2066-\u2069]/g,c=>"\\u"+c.charCodeAt(0).toString(16).padStart(4,"0"));
+};
+const count=(n)=>Number.isSafeInteger(n)&&n>=0?n:"—";
+function render(raw,source){
+  if(!raw || typeof raw!=="object" || Array.isArray(raw) || !Array.isArray(raw.findings)) throw Error("Expected a report object with a findings array.");
+  if(raw.version!==1) throw Error("Expected a version 1 Dataset Replay report.");
+  if(raw.findings.length>10000) throw Error("Too many findings to preview.");
+  const status=["pass","fail"].includes(raw.status)?raw.status:"unknown";
+  byId("origin").textContent=source;
+  byId("summary-title").textContent=source.includes("built-in")||source.includes("Local sample")?"Retail export check":"CSV export check";
+  const badge=byId("badge");
+  badge.textContent=({pass:"Passed",fail:"Failed",unknown:"No verdict"})[status];
+  badge.className="badge "+status;
+  byId("before").textContent=count(raw.counts?.baseline);
+  byId("after").textContent=count(raw.counts?.candidate);
+  
+  const explanations={"reference-failed":"The baseline failed its checks. Do not use it as a clean reference.","both-failed":"Both exports have findings. Inspect the baseline before attributing a change to the candidate.","candidate-failed":"The candidate failed its checks; the baseline passed."};
+  byId("explanation").textContent=Object.hasOwn(explanations,raw.verdict)?explanations[raw.verdict]:status==="pass"?"Both exports passed the configured checks. This does not mean they are identical.":status==="fail"?"A configured check failed in one or both exports. See the source beside each finding.":"The report does not specify a pass or fail verdict.";
+  if(raw.retention)byId("explanation").textContent+=" Baseline keys retained: "+count(raw.retention.retained)+"/"+count(raw.retention.baselineEligible)+".";
+  const body=byId("rows");body.replaceChildren();
+  for(const f of raw.findings.slice(0,100)){
+    if(!f || typeof f!=="object" || Array.isArray(f)) continue;
+    const tr=document.createElement("tr");
+    const line=Number.isSafeInteger(f.line)&&f.line>0?(f.side==="baseline"?"Baseline ":"Candidate ")+f.line+(Number.isSafeInteger(f.record)&&f.record>0?" (record "+f.record+")":""):(f.line===null?(f.side==="baseline"?"Baseline dataset":"Candidate dataset"):"—");
+    const val=own(f,"value")?str(f.value,true):"";
+    const observation=f.message!==undefined?str(f.message)+(val?" · Observed: "+val:""):val||"—";
+    for(const item of [str(f.rule??((typeof f.code==="string")?f.code.replaceAll("_"," "):f.code)),str(f.key),str(f.column),line+(Number.isSafeInteger(f.firstLine)?" (first: "+f.firstLine+")":""),observation+(Number.isSafeInteger(f.expectedAtLeast)?" (minimum "+f.expectedAtLeast+")":"")]){
+      const td=document.createElement("td");td.textContent=item;tr.append(td);
+    }
+    body.append(tr);
+  }
+  const totals=raw.counts;
+  const knownFindings=Number.isSafeInteger(totals?.findings)&&totals.findings>=body.children.length?totals.findings:raw.truncated?.findings?"unknown":raw.findings.length;
+  byId("finding-count").textContent=body.children.length+" / "+knownFindings;
+  const colText=(v)=>Array.isArray(v)?v.slice(0,20).map(x=>str(x)).join(", ")+(v.length>20?" (+"+(v.length-20)+" more)":""):"";
+  const schema=raw.schema;
+  byId("schema-delta").textContent=schema?"Columns added: "+(colText(schema.added)||"none")+" · removed: "+(colText(schema.removed)||"none"):"";
+  byId("change-totals").textContent=totals&&["added","removed","changed"].some(k=>Number.isSafeInteger(totals[k]))?"Rows by key: "+count(totals.added)+" added · "+count(totals.removed)+" removed · "+count(totals.changed)+" modified":"";
+  const rowBody=byId("change-rows");rowBody.replaceChildren();
+  const changeList=Array.isArray(raw.changes)?raw.changes:[];
+  const sourceLine=(v,n)=>Number.isSafeInteger(v)&&v>0?String(v)+(Number.isSafeInteger(n)&&n>0?" (record "+n+")":""):"—";
+  for(const ch of changeList.slice(0,100)){
+    if(!ch||typeof ch!=="object"||Array.isArray(ch)) continue;
+    const f=Array.isArray(ch.fields)?ch.fields:[];
+    const text=f.slice(0,10).map(x=>x&&typeof x==="object"?str(x.column)+": "+str(x.before,true)+" → "+str(x.after,true):"").filter(Boolean).join(" · ")+(f.length>10?" · More fields omitted":"");
+    const tr=document.createElement("tr");
+    for(const item of [str(ch.kind),str(ch.key),sourceLine(ch.baselineLine,ch.baselineRecord),sourceLine(ch.candidateLine,ch.candidateRecord),text||"—"]){
+      const td=document.createElement("td");td.textContent=item;tr.append(td);
+    }
+    rowBody.append(tr);
+  }
+  const validCounts=totals&&["added","removed","changed"].every(k=>Number.isSafeInteger(totals[k])&&totals[k]>=0);
+  const knownChanges=validCounts?totals.added+totals.removed+totals.changed:null;
+  const cappedChanges=raw.truncated?.changes||raw.truncated?.fields||changeList.length>rowBody.children.length||changeList.some(c=>c&&Array.isArray(c.fields)&&c.fields.length>10)||(knownChanges!==null&&knownChanges>rowBody.children.length);
+  byId("change-section").hidden=!changeList.length&&!cappedChanges;
+  byId("change-evidence-note").textContent=rowBody.children.length+" evidence rows shown"+(knownChanges!==null?" of "+knownChanges:"")+(cappedChanges?". Some rows or fields are omitted.":".");
+  const notes=byId("no-findings");byId("findings").hidden=body.children.length===0;
+  notes.hidden=body.children.length>0 && raw.findings.length<=100 && !raw.truncated?.findings && !(typeof knownFindings==="number"&&knownFindings>body.children.length);
+  notes.textContent=(raw.findings.length>100 || raw.truncated?.findings || (typeof knownFindings==="number"&&knownFindings>body.children.length))?"Preview capped at the first 100 findings.":raw.findings.length?"No valid finding rows to display.":"No findings in this report.";
+}
+function scenario(which){
+  byId("show-broken").setAttribute("aria-pressed",String(which==="broken"));
+  byId("show-clean").setAttribute("aria-pressed",String(which==="clean"));
+  byId("fixture-section").hidden=false;
+  byId("fixture-before").textContent=fixtures.before;
+  byId("fixture-after").textContent=fixtures[which];
+  byId("error").hidden=true;
+  render(sample[which],"Local sample · precomputed");
+}
+function setReport(report, source="Imported report · not recomputed"){
+  render(report,source);
+  byId("fixture-section").hidden=true;
+  for(const id of ["show-broken","show-clean"]) byId(id).setAttribute("aria-pressed","false");
+}
+window.DatasetReplayPreview=Object.freeze({setReport});
+byId("show-broken").addEventListener("click",()=>scenario("broken"));
+byId("show-clean").addEventListener("click",()=>scenario("clean"));
+byId("load-report").addEventListener("click",()=>{
+  const err=byId("error");err.hidden=true;
+  try{
+    const input=byId("report-input").value;
+    if(input.length>1000000) throw Error("Report exceeds 1 million characters.");
+    let parsed;try{parsed=JSON.parse(input)}catch{throw Error("Paste valid JSON from the comparison engine.");}
+    setReport(parsed);
+  }catch(e){err.textContent=e.message;err.hidden=false;}
+});
+scenario("broken");
+})();
+</script>
+</body></html>

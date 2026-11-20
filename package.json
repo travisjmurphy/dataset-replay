@@ -1,0 +1,17 @@
+{
+  "name": "dataset-replay",
+  "version": "0.1.1",
+  "private": true,
+  "type": "module",
+  "engines": {
+    "node": "^22.18.0 || >=24.2.0"
+  },
+  "scripts": {
+    "test": "node tests/core.mjs && node tests/smoke.mjs && node tests/edges.mjs"
+  },
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/travisjmurphy/dataset-replay.git"
+  }
+}

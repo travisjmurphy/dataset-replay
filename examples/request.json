@@ -1,0 +1,18 @@
+{
+  "baselineCsv": "sku,price_cad\nA-104,19.95\nB-209,49.00",
+  "candidateCsv": "sku,price_cad\nB-209,\nA-104,19.95",
+  "policy": {
+    "key": "sku",
+    "requiredValues": [
+      "price_cad"
+    ],
+    "numericRules": [
+      {
+        "column": "price_cad",
+        "min": 0.01
+      }
+    ],
+    "minCandidateRows": 2,
+    "minKeyRetention": 1
+  }
+}
